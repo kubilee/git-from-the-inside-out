@@ -1,10 +1,12 @@
 Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
 
+本文地址：<https://github.com/pysnow530/git-from-the-inside-out/blob/master/README.md>.
+
 ## 彻底理解Git
 
 本文主要解释git的工作原理。如果你是一个视频党，请移步[youtube视频](https://www.youtube.com/watch?v=fCtZWGhQBvo)。
 
-本文假设你已经了解Git，并可以使用它来对项目做版本控制。我们主要考察支撑Git的图结构和指导Git行为的图属性。在考察原理时，我们会创建真实的状态模型，而不是通过各种实验的结果妄做猜想。通过这个真实的状态模型，我们可以更直观地了解git已经做了什么，正在做什么，以及接下来要做什么。
+本文假设你已经了解Git，并可以使用它对项目做版本控制。我们主要考察支撑Git的图结构和指导Git行为的图属性。在考察原理时，我们会创建真实的状态模型，而不是通过各种实验的结果妄做猜想。通过这个真实的状态模型，我们可以更直观地了解git已经做了什么，正在做什么，以及接下来要做什么。
 
 本文结构组织为一系列的Git命令，针对一个单独的项目展开。在关键的地方，我们会观察Git当前状态的图结构，并解释图属性及其产生的行为。
 
@@ -15,12 +17,12 @@ Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
     ~ $ mkdir alpha
     ~ $ cd alpha
 
-创建项目目录`alpha`。
+我们创建了一个目录`alpha`用以存放项目。
 
     ~/alpha $ mkdir data
     ~/alpha $ printf 'a' > data/letter.txt
 
-进入`alpha`目录，创建目录`data`。在`data`目录下，创建内容为`a`的文件`letter.txt`。现在，`alpha`的目录结构如下：
+进入`alpha`，创建目录`data`。在`data`目录下，创建内容为`a`的文件`letter.txt`。现在，`alpha`的目录结构如下：
 
     alpha
     └── data
@@ -31,7 +33,7 @@ Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
     ~/alpha $ git init
     Initialized empty Git repository
 
-`git init`命令将当前目录添加到Git仓库。为此，它会在当前目录下创建一个`.git`目录并写入一批文件。这些文件记录了Git配置和版本历史的所有信息。它们都是一些普通的文件，并没什么特别。用户可以使用编辑器或shell命令对它们进行浏览或编辑。也就是说，用户可以像编辑他们的项目文件一样来浏览或编辑项目的版本历史。
+`git init`命令将当前目录初始化为一个Git仓库。为此，它会在当前目录下创建一个`.git`目录并写入一批文件。这些文件记录了Git配置和版本历史的所有信息。它们都是一些普通的文件，并没什么特别。用户可以使用编辑器或shell命令对它们进行浏览或编辑。也就是说，我们可以像编辑项目文件一样来浏览或编辑项目的版本历史。
 
 现在，`alpha`的目录结构变成了这个样子：
 
@@ -42,25 +44,25 @@ Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
         ├── objects
         etc...
 
-`.git`目录和它的内容是由Git创建的。其它文件组成了工作区，是由用户创建的。
+`.git`目录及其内容是由Git创建的。其它文件组成了工作区，它们是由用户创建的。
 
 ### 添加文件
 
     ~/alpha $ git add data/letter.txt
 
-添加`data/letter.txt`文件到Git。该操作有两个影响。
+添加`data/letter.txt`文件到Git。该操作有两个结果。
 
 第一，它会在`.git/objects/`目录下创建一个新的blob文件。
 
 这个blob文件包含了`data/letter.txt`文件压缩后的内容，文件名取自内容的哈希值。哈希意味着执行一段算法，将给定内容转换为更小的<sup>1</sup>，且能唯一<sup>2</sup>确定原内容的值的过程。例如，Git对`a`作哈希得到`2e65efe2a145dda7ee51d1741299f848e5bf752e`。哈希值的头两个字符用作对象数据库的目录名：`.git/objects/2e/`，剩下的字符用作blob文件的文件名：`.git/objects/2e/65efe2a145dda7ee51d1741299f848e5bf752e`。
 
-注意刚才添加文件时，Git将它的内容保存到`objects`目录的过程。即使我们从工作区把`data/letter.txt`文件删掉，它的内容仍然可以在Git中找回。
+注意刚才添加文件时，Git将它的内容保存到`objects`目录的过程。即使我们把`data/letter.txt`文件从工作区删掉，它的内容仍然可以在Git中找回。
 
-第二，它会将`data/letter.txt`文件添加到index。index是一个列表，它记录有我们想要跟踪的所有文件。该列表保存在`.git/index`文件内，每一行维护一个文件名到（添加到index时的）文件内容哈希值的映射。执行`git add`命令后的index如下：
+第二，git将`data/letter.txt`文件添加到index。index是一个列表，它记录着我们想要跟踪的所有文件。该列表保存在`.git/index`文件内，每一行维护一个文件名到（添加到index时的）文件内容哈希值的映射。执行`git add`命令后的index如下：
 
     data/letter.txt 2e65efe2a145dda7ee51d1741299f848e5bf752e
 
-创建一个内容为`1234`的文件`data/number.txt`。
+我们来创建一个内容为`1234`的文件`data/number.txt`。
 
     ~/alpha $ printf '1234' > data/number.txt
 
@@ -80,7 +82,7 @@ Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
     data/letter.txt 2e65efe2a145dda7ee51d1741299f848e5bf752e
     data/number.txt 274c0052dd5408f8ae2bc8440029ff67d79bc5c3
 
-注意，虽然我们执行的是`git add data`，但只有`data`目录内的文件被加到index，`data`不会被加入。
+注意，虽然我们执行的是`git add data`，但只有`data`目录内的文件被加到index，`data`目录是不会被加入的。
 
     ~/alpha $ printf '1' > data/number.txt
     ~/alpha $ git add data
@@ -94,11 +96,11 @@ Translated from <http://maryrosecook.com/blog/post/git-from-the-inside-out>.
 
 创建一个提交`a1`。Git会打印出此次提交的简短描述。
 
-提交命令对应三个步骤。创建提交版本对应文件的树图（tree graph），创建一个提交对象，然后将当前分支指向该提交。
+提交命令对应三个步骤。创建提交版本对应文件的树图（tree graph），创建一个提交对象，将当前分支指向该提交对象。
 
 #### 创建树图
 
-树图记录着index内对应文件 (即项目文件) 的位置和内容，Git通过树图来记录项目的当前状态。
+树图记录着index内对应文件 (即项目文件) 的位置及内容信息，Git通过树图来记录项目的当前状态。
 
 树图由两类对象组成：blob和tree。
 
@@ -119,11 +121,11 @@ tree是在创建提交时产生的，一个tree对应工作区的一个目录。
 
     040000 tree 0eed1217a2947f4930583229987d90fe5e8e0b74 data
 
-这仅有的一行指向`data`这个树对象。
+这仅有的一行指向`data`目录对应的tree。
 
 ![Tree graph for the a1 commit](images/1-a1-tree-graph.png)
 
-上图中，`root` tree指向了`data`，而`data` tree指向了`data/letter.txt`和`data/number.txt`这两个blob。
+上图中，根tree指向`data`对应的tree，而`data`对应的tree指向了`data/letter.txt`和`data/number.txt`这两个blob。
 
 #### 创建提交对象
 
@@ -143,7 +145,7 @@ tree是在创建提交时产生的，一个tree对应工作区的一个目录。
 
 最后，commit命令将当前分支指向新的提交。
 
-那么，哪个是当前分支呢？Git查看保存`HEAD`的文件`.git/HEAD`，此时它的内容是：
+那么问题来了，哪个是当前分支呢？Git查看保存`HEAD`的文件`.git/HEAD`，此时它的内容是：
 
     ref: refs/heads/master
 
@@ -151,11 +153,11 @@ tree是在创建提交时产生的，一个tree对应工作区的一个目录。
 
 `HEAD`和`master`都是引用。引用是一个标记，Git或用户可以通过它找到某个提交。
 
-代表`master`引用的文件还不存在，因为这是我们在该仓库的第一个提交。不过不用担心，Git会创建该文件`.git/refs/heads/master`并写入提交对象的哈希值：
+代表`master`引用的文件还不存在，因为这是我们在该仓库的第一个提交。不过不用担心，Git会创建该文件`.git/refs/heads/master`，并写入提交对象的哈希值：
 
     74ac3ad9cde0b265d2b4f1c778b283a6e2ffbafd
 
-注意：如果你跟着本文边读边敲，你的`a1`提交生成的哈希值会跟上值不同。像blob和tree这样以内容计算哈希的对象，它们的哈希值与本文相同。提交不然，因为它的哈希值包含了提交日期和作者的信息。
+注意：如果你是跟着本文边读边敲，你的`a1`提交生成的哈希值会跟上值不同。像blob和tree这样以内容计算哈希的对象，它们的哈希值与本文相同。提交不然，因为它的哈希值包含了提交日期和作者的信息。
 
 现在把`HEAD`和`master`添加到我们的图里：
 
